@@ -103,7 +103,7 @@ export const InitialModel = () => {
                 )}
               />
             </div>
-            <DialogFooter className="bg-grey-100 px-6 py-4">
+            <DialogFooter className="bg-gray-100 px-6 py-4">
               <Button
                 className="hover:opacity-75 cursor-pointer"
                 disabled={isLoading}
