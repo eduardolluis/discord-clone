@@ -5,9 +5,8 @@ export type ModalType =
   | "JOIN_SERVER"
   | "EDIT_SERVER"
   | "INVITE_SERVER"
-  | "MEMBERS"
-
-
+  | "CREATE_CHANNEL"
+  | "MEMBERS";
 
 interface ModalData {
   server?: Server;
@@ -25,6 +24,6 @@ export const useModal = create<ModalStore>((set) => ({
   type: null,
   data: {},
   isOpen: false,
-  onOpen: (type, data = {}) => set({ isOpen: true, type, data}),
+  onOpen: (type, data = {}) => set({ isOpen: true, type, data }),
   onClose: () => set({ isOpen: false, type: null }),
 }));
