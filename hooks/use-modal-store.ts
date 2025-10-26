@@ -4,7 +4,10 @@ export type ModalType =
   | "CREATE_SERVER"
   | "JOIN_SERVER"
   | "EDIT_SERVER"
-  | "INVITE_SERVER";
+  | "INVITE_SERVER"
+  | "MEMBERS"
+
+
 
 interface ModalData {
   server?: Server;
