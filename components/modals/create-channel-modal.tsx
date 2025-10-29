@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z
@@ -53,12 +54,13 @@ const formSchema = z.object({
 });
 
 export const CreateChannelModal = () => {
-  const { isOpen, onClose, type } = useModal();
+  const { isOpen, onClose, type, data } = useModal();
 
   const router = useRouter();
   const params = useParams();
 
   const isModalOpen = isOpen && type === "CREATE_CHANNEL";
+  const { channelType } = data;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -66,6 +68,14 @@ export const CreateChannelModal = () => {
       name: "",
     },
   });
+
+  useEffect(() => {
+    if (channelType) {
+      form.setValue("type", channelType);
+    } else {
+      form.setValue("type", ChannelType.TEXT);
+    }
+  }, [channelType, form]);
 
   const isLoading = form.formState.isSubmitting;
 
@@ -77,7 +87,7 @@ export const CreateChannelModal = () => {
           serverId: params?.serverId,
         },
       });
-      
+
       await axios.post(url, values);
 
       form.reset();
