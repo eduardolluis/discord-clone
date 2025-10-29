@@ -123,6 +123,7 @@ export const MembersModal = () => {
               {server.profileId !== member.profileId &&
                 loadingId !== member.id && (
                   <div className="ml-auto">
+// need to fix view on light mode
                     <DropdownMenu>
                       <DropdownMenuTrigger>
                         <MoreVertical className="h-4 w-4 text-zinc-500" />
@@ -166,6 +167,7 @@ export const MembersModal = () => {
                     </DropdownMenu>
                   </div>
                 )}
+
               {loadingId === member.id && (
                 <Loader2 className="animate-spin text-zinc-500 ml-auto w-4 h-4 " />
               )}
