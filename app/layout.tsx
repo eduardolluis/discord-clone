@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
+import { SocketProvider } from "@/components/providers/socket-provider";
 
 const font = Open_Sans({
   variable: "--font-open-sans",
@@ -31,8 +32,10 @@ export default function RootLayout({
             enableSystem={false}
             storageKey="discordia-theme"
           >
-            {children}
-            <ModalProvider />
+            <SocketProvider>  
+              <ModalProvider />
+              {children}
+            </SocketProvider>
           </ThemeProvider>
         </body>
       </html>
