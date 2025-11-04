@@ -6,13 +6,15 @@ import qs from "query-string";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Edit, FileIcon, ShieldAlert, ShieldCheck, Trash } from "lucide-react";
+
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { UserAvatar } from "@/components/user-avatar";
+import { useRouter, useParams } from "next/navigation";
 
 import { Member, MemberRole, Profile } from "@prisma/client";
+import { UserAvatar } from "@/components/user-avatar";
 import { ActionTooltip } from "../action-tooltip";
-import { Edit, FileIcon, ShieldAlert, ShieldCheck, Trash } from "lucide-react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
@@ -61,6 +63,15 @@ export const ChatItem = ({
   const [isEditing, setIsEditing] = useState(false);
 
   const { onOpen } = useModal();
+  const params = useParams();
+  const router = useRouter();
+
+  const onMemberClick = () => {
+    if (member.id === currentMember.id) {
+      return;
+    }
+    router.push(`/servers/${params?.serverId}/conversations/${member.id}`);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -116,13 +127,19 @@ export const ChatItem = ({
   return (
     <div className="relative group flex items-center hover:bg-black/5 p-4 transition w-full">
       <div className="group flex gap-x-2 items-start w-full">
-        <div className="cursor-pointer hover:drop-shadow-md transition">
+        <div
+          className="cursor-pointer hover:drop-shadow-md transition"
+          onClick={onMemberClick}
+        >
           <UserAvatar src={member.profile.imageUrl} />
         </div>
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-x-2">
             <div className="flex items-center">
-              <p className="font-semibold text-sm hover:underline cursor-pointer">
+              <p
+                className="font-semibold text-sm hover:underline cursor-pointer"
+                onClick={onMemberClick}
+              >
                 {member.profile.name}
               </p>
               <ActionTooltip label={member.role}>
