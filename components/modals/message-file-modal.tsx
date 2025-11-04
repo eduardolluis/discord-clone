@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/use-modal-store";
 
 const formSchema = z.object({
-  imageUrl: z.string().min(1, {
+  fileUrl: z.string().min(1, {
     message: "Attachment is required.",
   }),
 });
@@ -28,12 +28,13 @@ export const MessageFileModal = () => {
   const { isOpen, onClose, type, data } = useModal();
   const { apiUrl, query } = data;
   const router = useRouter();
+
   const isModalOpen = isOpen && type === "MESSAGE_FILE";
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      imageUrl: "",
+      fileUrl: "",
     },
   });
 
@@ -50,16 +51,24 @@ export const MessageFileModal = () => {
         url: apiUrl || "",
         query: query as StringifiableRecord | undefined,
       });
-      
-      await axios.post(url, {
-        content: values.imageUrl,
-      });
-      
+
+      // Use axios with credentials
+      await axios.post(
+        url,
+        {
+          fileUrl: values.fileUrl,
+          content: values.fileUrl,
+        },
+        {
+          withCredentials: true, // Include cookies for authentication
+        }
+      );
+
       form.reset();
       router.refresh();
       handleClose();
     } catch (error) {
-      console.log(error);
+      console.error("Error sending file:", error);
     }
   };
 
@@ -80,7 +89,7 @@ export const MessageFileModal = () => {
               <div className="flex items-center justify-center text-center">
                 <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="fileUrl"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>

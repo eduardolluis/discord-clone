@@ -21,15 +21,15 @@ export default async function handler(
     }
 
     if (!serverId) {
-      return res.status(401).json({ error: "Server ID   missing" });
+      return res.status(400).json({ error: "Server ID missing" });
     }
 
     if (!channelId) {
-      return res.status(401).json({ error: "Channel ID  missing" });
+      return res.status(400).json({ error: "Channel ID missing" });
     }
 
-    if (!content) {
-      return res.status(401).json({ error: "Content missing" });
+    if (!content && !fileUrl) {
+      return res.status(400).json({ error: "Content or file is required" });
     }
 
     const server = await db.server.findFirst({
@@ -53,11 +53,12 @@ export default async function handler(
     const channel = await db.channel.findFirst({
       where: {
         id: channelId as string,
+        serverId: serverId as string,
       },
     });
 
     if (!channel) {
-      return res.status(403).json({ error: "Channel not found" });
+      return res.status(404).json({ error: "Channel not found" });
     }
 
     const member = server.members.find(
@@ -85,10 +86,9 @@ export default async function handler(
     });
 
     const channelKey = `chat:${channelId}:messages`;
-
     res?.socket?.server?.io?.emit(channelKey, message);
 
-    return res.status(200).json({ message });
+    return res.status(200).json(message);
   } catch (error) {
     console.log("[MESSAGE_POST]", error);
     return res.status(500).json({ error: "Internal server error" });
