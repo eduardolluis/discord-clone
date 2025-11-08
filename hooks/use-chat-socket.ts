@@ -15,7 +15,6 @@ type MessageWithMemberWithProfile = Message & {
   };
 };
 
-// Estructura que React Query devuelve cuando usas paginación
 interface InfiniteMessages {
   pages: {
     items: MessageWithMemberWithProfile[];
@@ -62,6 +61,8 @@ export const useChatSocket = ({
 
         return { ...oldData, pages: newPages };
       });
+
+      window.dispatchEvent(new CustomEvent("chat-scroll-to-bottom"));
     });
 
     return () => {

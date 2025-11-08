@@ -17,7 +17,6 @@ export const useChatscroll = ({
 }: ChatScrollProps) => {
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Cargar más mensajes cuando llegas arriba
   useEffect(() => {
     const topDiv = chatRef.current;
 
@@ -36,13 +35,28 @@ export const useChatscroll = ({
     };
   }, [chatRef, shouldLoadMore, loadMore]);
 
-  // Auto-scroll cuando llegan mensajes nuevos
   useEffect(() => {
-    const bottomDiv = bottomRef.current;
+    const handleScrollEvent = () => {
+      const topDiv = chatRef.current;
+      if (topDiv) {
+        setTimeout(() => {
+          topDiv.scrollTop = topDiv.scrollHeight;
+        }, 100);
+      }
+    };
+
+    window.addEventListener("chat-scroll-to-bottom", handleScrollEvent);
+
+    return () => {
+      window.removeEventListener("chat-scroll-to-bottom", handleScrollEvent);
+    };
+  }, [chatRef]);
+
+  useEffect(() => {
     const topDiv = chatRef.current;
 
     const shouldAutoScroll = () => {
-      if (!hasInitialized && bottomDiv) {
+      if (!hasInitialized && topDiv) {
         setHasInitialized(true);
         return true;
       }
@@ -63,5 +77,5 @@ export const useChatscroll = ({
         }
       }, 100);
     }
-  }, [bottomRef, chatRef, count, hasInitialized]);
+  }, [chatRef, count, hasInitialized]);
 };

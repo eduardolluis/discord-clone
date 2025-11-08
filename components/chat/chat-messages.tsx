@@ -114,7 +114,6 @@ export const ChatMessages = ({
           )}
         </div>
       )}
-      <div ref={bottomRef} />
       <div className="flex flex-col-reverse mt-auto">
         {data?.pages?.map((group, i) => (
           <Fragment key={i}>
@@ -135,6 +134,7 @@ export const ChatMessages = ({
             ))}
           </Fragment>
         ))}
+        <div ref={bottomRef} />
       </div>
     </div>
   );

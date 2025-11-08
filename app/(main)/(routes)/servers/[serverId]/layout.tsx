@@ -8,7 +8,7 @@ const ServerIdLayout = async ({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ serverId: string }>; // Changed type
+  params: Promise<{ serverId: string }>;
 }) => {
   const profile = await currentProfile();
   if (!profile) {
@@ -33,9 +33,9 @@ const ServerIdLayout = async ({
   }
 
   return (
-    <div className="h-full">
+    <div className="h-screen">
       <div className="!hidden md:!flex h-full w-60 z-20 flex-col fixed inset-y-0">
-        <ServerSidebar serverId={serverId} /> {/* Use the awaited value */}
+        <ServerSidebar serverId={serverId} />
       </div>
       <main className="h-full md:pl-60">{children}</main>
     </div>
