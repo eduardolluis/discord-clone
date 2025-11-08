@@ -3,12 +3,16 @@ import { db } from "@/lib/db";
 import { MemberRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { channelId: string } }
-) {
+type RouteParams = {
+  params: Promise<{
+    channelId: string;
+  }>;
+};
+
+export async function DELETE(req: Request, { params }: RouteParams) {
   try {
     const profile = await currentProfile();
+    const { channelId } = await params; 
     const { searchParams } = new URL(req.url);
     const serverId = searchParams.get("serverId");
 
@@ -20,7 +24,7 @@ export async function DELETE(
       return new NextResponse("Server ID is required", { status: 400 });
     }
 
-    if (!params.channelId) {
+    if (!channelId) {
       return new NextResponse("Channel ID is required", { status: 400 });
     }
 
@@ -30,19 +34,14 @@ export async function DELETE(
         members: {
           some: {
             profileId: profile.id,
-            role: {
-              in: [MemberRole.ADMIN, MemberRole.MODERATOR],
-            },
+            role: { in: [MemberRole.ADMIN, MemberRole.MODERATOR] },
           },
         },
       },
       data: {
         channels: {
           delete: {
-            id: params.channelId,
-            name: {
-              not: "general",
-            },
+            id: channelId,
           },
         },
       },
@@ -54,13 +53,12 @@ export async function DELETE(
     return new NextResponse("Could not delete channel", { status: 500 });
   }
 }
-export async function PATCH(
-  req: Request,
-  { params }: { params: { channelId: string } }
-) {
+
+export async function PATCH(req: Request, { params }: RouteParams) {
   try {
     const profile = await currentProfile();
-    const {name, type} = await req.json();
+    const { channelId } = await params; 
+    const { name, type } = await req.json();
     const { searchParams } = new URL(req.url);
     const serverId = searchParams.get("serverId");
 
@@ -72,12 +70,14 @@ export async function PATCH(
       return new NextResponse("Server ID is required", { status: 400 });
     }
 
-    if (!params.channelId) {
+    if (!channelId) {
       return new NextResponse("Channel ID is required", { status: 400 });
     }
 
     if (name === "general") {
-      return new NextResponse("Channel name cannot be 'general'", { status: 400 });
+      return new NextResponse("Channel name cannot be 'general'", {
+        status: 400,
+      });
     }
 
     const server = await db.server.update({
@@ -86,33 +86,26 @@ export async function PATCH(
         members: {
           some: {
             profileId: profile.id,
-            role: {
-              in: [MemberRole.ADMIN, MemberRole.MODERATOR],
-            },
+            role: { in: [MemberRole.ADMIN, MemberRole.MODERATOR] },
           },
         },
       },
       data: {
         channels: {
-         update: {
+          update: {
             where: {
-                id: params.channelId,
-                NOT: {
-                    name: "general",
-                }
+              id: channelId,
+              NOT: { name: "general" },
             },
-            data: {
-                name,
-                type
-            }
-         },
+            data: { name, type },
+          },
         },
       },
     });
 
     return NextResponse.json(server);
   } catch (error) {
-    console.log("[CHANNEL_DELETE_ERROR]", error);
-    return new NextResponse("Could not delete channel", { status: 500 });
+    console.log("[CHANNEL_PATCH_ERROR]", error);
+    return new NextResponse("Could not update channel", { status: 500 });
   }
 }

@@ -4,22 +4,23 @@ import { NextResponse } from "next/server";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
     const profile = await currentProfile();
+    const { serverId } = await params; 
 
     if (!profile) {
-      return new Response("Unauthorized", { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    if (!params.serverId) {
-      return new Response("Server ID is required", { status: 400 });
+    if (!serverId) {
+      return new NextResponse("Server ID is required", { status: 400 });
     }
 
     const server = await db.server.update({
       where: {
-        id: params.serverId,
+        id: serverId,
         profileId: {
           not: profile.id,
         },
@@ -41,6 +42,6 @@ export async function PATCH(
     return NextResponse.json(server);
   } catch (error) {
     console.log(error);
-    return new Response("Failed to leave server", { status: 500 });
+    return new NextResponse("Failed to leave server", { status: 500 });
   }
 }

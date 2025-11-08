@@ -1,11 +1,4 @@
-import {
-  Hash,
-  Mic,
-  Server,
-  ShieldAlert,
-  ShieldCheck,
-  Video,
-} from "lucide-react";
+import { Hash, Mic, ShieldAlert, ShieldCheck, Video } from "lucide-react";
 import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";

@@ -3,7 +3,7 @@
 import qs from "query-string";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { Icon, Video, VideoOff } from "lucide-react";
+import { Video, VideoOff } from "lucide-react";
 
 import { ActionTooltip } from "@/components/action-tooltip";
 
