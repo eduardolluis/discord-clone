@@ -62,13 +62,17 @@ export const ChatMessages = ({
 
   useChatSocket({ queryKey, addKey, updateKey });
 
+  const totalMessages =
+    data?.pages?.reduce((acc, page) => acc + page.items.length, 0) ?? 0;
+
   useChatscroll({
-    chatRef: chatRef as React.RefObject<HTMLDivElement>,
-    bottomRef: bottomRef as React.RefObject<HTMLDivElement>,
+    chatRef,
+    bottomRef,
     loadMore: fetchNextPage,
     shouldLoadMore: !isFetchingNextPage && !!hasNextPage,
-    count: data?.pages?.[0]?.items?.length ?? 0,
+    count: totalMessages,
   });
+
   if (status === "pending") {
     return (
       <div className="flex flex-col flex-1 justify-center items-center">
@@ -79,10 +83,11 @@ export const ChatMessages = ({
       </div>
     );
   }
+
   if (status === "error") {
     return (
       <div className="flex flex-col flex-1 justify-center items-center">
-        <ServerCrash className="h-7 w-7 text-zinc-500 animate-spin my-4" />
+        <ServerCrash className="h-7 w-7 text-zinc-500 my-4" />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Something went wrong!
         </p>
@@ -91,7 +96,7 @@ export const ChatMessages = ({
   }
 
   return (
-    <div ref={chatRef} className=" flex-1 flex-col py-4 overflow-y-auto">
+    <div ref={chatRef} className="flex flex-1 flex-col py-4 overflow-y-auto">
       {!hasNextPage && <div className="flex-1" />}
       {!hasNextPage && <ChatWelcome type={type} name={name} />}
 
@@ -102,13 +107,14 @@ export const ChatMessages = ({
           ) : (
             <button
               onClick={() => fetchNextPage()}
-              className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 text-xs my-4 dark:hover-text-zinc-300 transition"
+              className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 text-xs my-4 dark:hover:text-zinc-300 transition"
             >
               Load previous messages
             </button>
           )}
         </div>
       )}
+      <div ref={bottomRef} />
       <div className="flex flex-col-reverse mt-auto">
         {data?.pages?.map((group, i) => (
           <Fragment key={i}>
@@ -130,7 +136,6 @@ export const ChatMessages = ({
           </Fragment>
         ))}
       </div>
-      <div ref={bottomRef} />
     </div>
   );
 };

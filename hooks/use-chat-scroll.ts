@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 type ChatScrollProps = {
-  chatRef: React.RefObject<HTMLDivElement>;
-  bottomRef: React.RefObject<HTMLDivElement>;
+  chatRef: React.RefObject<HTMLDivElement | null>;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
   shouldLoadMore: boolean;
   loadMore: () => void;
   count: number;
@@ -17,6 +17,7 @@ export const useChatscroll = ({
 }: ChatScrollProps) => {
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Cargar más mensajes cuando llegas arriba
   useEffect(() => {
     const topDiv = chatRef.current;
 
@@ -35,6 +36,7 @@ export const useChatscroll = ({
     };
   }, [chatRef, shouldLoadMore, loadMore]);
 
+  // Auto-scroll cuando llegan mensajes nuevos
   useEffect(() => {
     const bottomDiv = bottomRef.current;
     const topDiv = chatRef.current;
@@ -44,17 +46,22 @@ export const useChatscroll = ({
         setHasInitialized(true);
         return true;
       }
-    
+
       if (!topDiv) {
         return false;
       }
 
-      const distanceFromBottom = topDiv.scrollHeight - topDiv.scrollTop - topDiv.clientHeight;
+      const distanceFromBottom =
+        topDiv.scrollHeight - topDiv.scrollTop - topDiv.clientHeight;
       return distanceFromBottom <= 100;
     };
 
     if (shouldAutoScroll()) {
-      bottomDiv?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => {
+        if (topDiv) {
+          topDiv.scrollTop = topDiv.scrollHeight;
+        }
+      }, 100);
     }
-  }, [bottomRef, chatRef, hasInitialized]); 
+  }, [bottomRef, chatRef, count, hasInitialized]);
 };
