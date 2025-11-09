@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { useModal } from "@/hooks/use-modal-store";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ChatInputProps {
   apiUrl: string;
@@ -25,6 +26,7 @@ const formSchema = z.object({
 export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
   const { onOpen } = useModal();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,12 +43,63 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         url: apiUrl,
         query,
       });
+
+      // Optimistic update: añade el mensaje inmediatamente
+      const chatId = query.channelId || query.conversationId;
+      const queryKey = `chat:${chatId}`;
+
+      // Crea un mensaje temporal
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        content: data.content,
+        fileUrl: null,
+        deleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        member: {
+          id: "temp-member",
+          role: "GUEST",
+          profile: {
+            id: "temp-profile",
+            name: "You",
+            imageUrl: "",
+            email: "",
+          },
+        },
+      };
+
+      // Actualiza la caché inmediatamente
+      queryClient.setQueryData([queryKey], (oldData: any) => {
+        if (!oldData?.pages?.length) {
+          return { pages: [{ items: [tempMessage] }] };
+        }
+
+        const newPages = [...oldData.pages];
+        newPages[0] = {
+          ...newPages[0],
+          items: [tempMessage, ...newPages[0].items],
+        };
+
+        return { ...oldData, pages: newPages };
+      });
+
+      // Scroll al fondo inmediatamente
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("chat-scroll-to-bottom"));
+      }, 0);
+
+      // Limpia el form inmediatamente
+      form.reset();
+
+      // Envía al servidor en segundo plano
       await axios.post(url, data);
 
-      form.reset();
+      // El socket actualizará con el mensaje real
       router.refresh();
     } catch (error) {
       console.log(error);
+      // Si falla, revertir el optimistic update
+      form.setValue("content", data.content);
     }
   };
 

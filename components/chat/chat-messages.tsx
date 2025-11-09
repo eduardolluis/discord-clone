@@ -1,12 +1,11 @@
 "use client";
 
 import { format } from "date-fns";
-
 import { Member, Message, Profile } from "@prisma/client";
 import { ChatWelcome } from "./chat-welcome";
 import { useChatQuery } from "@/hooks/use-chat-query";
 import { Loader2, ServerCrash } from "lucide-react";
-import { Fragment, useRef } from "react";
+import { Fragment, useRef, memo } from "react";
 import { ChatItem } from "./chat-item";
 import { useChatSocket } from "@/hooks/use-chat-socket";
 import { useChatscroll } from "@/hooks/use-chat-scroll";
@@ -33,6 +32,9 @@ interface ChatMessagesProps {
   paramValue: string;
   type: "channel" | "conversation";
 }
+
+// Memoizar componente de mensaje individual
+const MemoizedChatItem = memo(ChatItem);
 
 export const ChatMessages = ({
   name,
@@ -118,7 +120,7 @@ export const ChatMessages = ({
         {data?.pages?.map((group, i) => (
           <Fragment key={i}>
             {group.items.map((message: MessageWithMemberWithProfile) => (
-              <ChatItem
+              <MemoizedChatItem
                 id={message.id}
                 key={message.id}
                 content={message.content}

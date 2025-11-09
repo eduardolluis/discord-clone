@@ -10,6 +10,7 @@ import { ChannelType, MemberRole } from "@prisma/client";
 import { Separator } from "@/components/ui/separator";
 import { ServerSection } from "@/components/server/server-section";
 import { ServerChannel } from "@/components/server/server-channel";
+import { cache } from "react";
 
 interface ServerSidebarProps {
   serverId: string;
@@ -29,16 +30,16 @@ const roleIconMap = {
   [MemberRole.ADMIN]: <ShieldAlert className="mr-2 h-4 w-4 text-rose-500" />,
 };
 
-export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
-  const profile = await currentProfile();
-
-  if (!profile) {
-    return redirect("/");
-  }
-
-  const server = await db.server.findUnique({
+// Cachear la consulta del servidor
+const getServerData = cache(async (serverId: string, profileId: string) => {
+  return await db.server.findFirst({
     where: {
       id: serverId,
+      members: {
+        some: {
+          profileId: profileId,
+        },
+      },
     },
     include: {
       channels: {
@@ -56,24 +57,34 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
       },
     },
   });
+});
 
-  const textChannels = server?.channels.filter(
-    (channel) => channel.type === ChannelType.TEXT
-  );
-  const audioChannels = server?.channels.filter(
-    (channel) => channel.type === ChannelType.AUDIO
-  );
-  const videoChannels = server?.channels.filter(
-    (channel) => channel.type === ChannelType.VIDEO
-  );
+export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
+  const profile = await currentProfile();
 
-  const members = server?.members.filter(
-    (member) => member.profileId !== profile.id
-  );
+  if (!profile) {
+    return redirect("/");
+  }
+
+  const server = await getServerData(serverId, profile.id);
 
   if (!server) {
     return redirect("/");
   }
+
+  const textChannels = server.channels.filter(
+    (channel) => channel.type === ChannelType.TEXT
+  );
+  const audioChannels = server.channels.filter(
+    (channel) => channel.type === ChannelType.AUDIO
+  );
+  const videoChannels = server.channels.filter(
+    (channel) => channel.type === ChannelType.VIDEO
+  );
+
+  const members = server.members.filter(
+    (member) => member.profileId !== profile.id
+  );
 
   const role = server.members.find(
     (member) => member.profileId === profile.id

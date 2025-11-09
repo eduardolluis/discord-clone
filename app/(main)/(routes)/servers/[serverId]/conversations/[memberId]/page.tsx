@@ -12,13 +12,15 @@ interface MemberIdPageProps {
     memberId: string;
     serverId: string;
   }>;
-  searchParams: {
-    video?: boolean;
-  };
+  searchParams: Promise<{
+    video?: string; // Cambiado a string porque los query params son strings
+  }>;
 }
 
 const MemberIdPage = async ({ params, searchParams }: MemberIdPageProps) => {
   const { memberId, serverId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const isVideo = resolvedSearchParams.video === "true";
 
   const profile = await currentProfile();
   if (!profile) {
@@ -60,10 +62,9 @@ const MemberIdPage = async ({ params, searchParams }: MemberIdPageProps) => {
         serverId={serverId}
         type="conversation"
       />
-      {searchParams.video && (
+      {isVideo ? (
         <MediaRoom chatId={conversation.id} audio={true} video={true} />
-      )}
-      {!searchParams.video && (
+      ) : (
         <>
           <ChatMessages
             member={currentMember}
