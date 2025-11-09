@@ -19,6 +19,37 @@ interface ChatInputProps {
   type: "conversation" | "channel";
 }
 
+type ChatProfile = {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  email?: string;
+};
+
+type ChatMember = {
+  id: string;
+  role: string;
+  profile: ChatProfile;
+};
+
+type ChatMessage = {
+  id: string;
+  content: string;
+  fileUrl: string | null;
+  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  member: ChatMember;
+};
+
+type ChatPage = {
+  items: ChatMessage[];
+};
+
+type ChatPages = {
+  pages: ChatPage[];
+};
+
 const formSchema = z.object({
   content: z.string().min(1).max(2000, "Message is too long"),
 });
@@ -44,12 +75,10 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         query,
       });
 
-      // Optimistic update: añade el mensaje inmediatamente
-      const chatId = query.channelId || query.conversationId;
+      const chatId = (query as any).channelId || (query as any).conversationId;
       const queryKey = `chat:${chatId}`;
 
-      // Crea un mensaje temporal
-      const tempMessage = {
+      const tempMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         content: data.content,
         fileUrl: null,
@@ -68,8 +97,7 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         },
       };
 
-      // Actualiza la caché inmediatamente
-      queryClient.setQueryData([queryKey], (oldData: any) => {
+      queryClient.setQueryData<ChatPages | undefined>([queryKey], (oldData) => {
         if (!oldData?.pages?.length) {
           return { pages: [{ items: [tempMessage] }] };
         }
@@ -83,22 +111,17 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         return { ...oldData, pages: newPages };
       });
 
-      // Scroll al fondo inmediatamente
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("chat-scroll-to-bottom"));
       }, 0);
 
-      // Limpia el form inmediatamente
       form.reset();
 
-      // Envía al servidor en segundo plano
       await axios.post(url, data);
 
-      // El socket actualizará con el mensaje real
       router.refresh();
     } catch (error) {
       console.log(error);
-      // Si falla, revertir el optimistic update
       form.setValue("content", data.content);
     }
   };
