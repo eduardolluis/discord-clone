@@ -54,6 +54,18 @@ const formSchema = z.object({
   content: z.string().min(1).max(2000, "Message is too long"),
 });
 
+const isChannelQuery = (
+  query: StringifiableRecord
+): query is StringifiableRecord & { channelId: string } => {
+  return typeof (query as Record<string, unknown>).channelId === "string";
+};
+
+const isConversationQuery = (
+  query: StringifiableRecord
+): query is StringifiableRecord & { conversationId: string } => {
+  return typeof (query as Record<string, unknown>).conversationId === "string";
+};
+
 export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
   const { onOpen } = useModal();
   const router = useRouter();
@@ -75,7 +87,12 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         query,
       });
 
-      const chatId = (query as any).channelId || (query as any).conversationId;
+      let chatId: string | undefined;
+      if (isChannelQuery(query)) chatId = query.channelId;
+      else if (isConversationQuery(query)) chatId = query.conversationId;
+
+      if (!chatId) throw new Error("Missing chat identifier");
+
       const queryKey = `chat:${chatId}`;
 
       const tempMessage: ChatMessage = {
@@ -121,14 +138,14 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
 
       router.refresh();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       form.setValue("content", data.content);
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}
           name="content"
