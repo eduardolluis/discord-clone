@@ -3,9 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 interface InviteCodePageProps {
-  params: {
-    inviteCode: string;
-  };
+  params: Promise<{ inviteCode: string }>;
 }
 
 const InviteCodePage = async ({ params }: InviteCodePageProps) => {
@@ -15,13 +13,16 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
     return redirect("/sign-in");
   }
 
-  if (!params.inviteCode) {
+  // Hacer await de params
+  const { inviteCode } = await params;
+
+  if (!inviteCode) {
     return redirect("/");
   }
 
   const existingServer = await db.server.findFirst({
     where: {
-      inviteCode: params.inviteCode,
+      inviteCode: inviteCode,
       members: {
         some: {
           profileId: profile.id,
@@ -36,7 +37,7 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
 
   const server = await db.server.update({
     where: {
-      inviteCode: params.inviteCode,
+      inviteCode: inviteCode,
     },
     data: {
       members: {
@@ -48,11 +49,12 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
       },
     },
   });
-  if (server){
+
+  if (server) {
     return redirect(`/servers/${server.id}`);
   }
-  return null
-};
 
+  return null;
+};
 
 export default InviteCodePage;
