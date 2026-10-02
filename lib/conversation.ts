@@ -4,21 +4,22 @@ export const getOrCreateConversation = async (
   memberOneId: string,
   memberTwoId: string
 ) => {
-  const conversation =
+  const existingConversation =
     (await findConversation(memberOneId, memberTwoId)) ||
     (await findConversation(memberTwoId, memberOneId));
 
-  if (!conversation) {
-    await createConversation(memberOneId, memberTwoId);
+  if (existingConversation) {
+    return existingConversation;
   }
-  return conversation;
+
+  return createConversation(memberOneId, memberTwoId);
 };
 
 const findConversation = async (memberOneId: string, memberTwoId: string) => {
   try {
     return await db.conversation.findFirst({
       where: {
-        AND: [{ memberOneId: memberOneId }, { memberTwoId: memberTwoId }],
+        AND: [{ memberOneId }, { memberTwoId }],
       },
       include: {
         memberOne: {

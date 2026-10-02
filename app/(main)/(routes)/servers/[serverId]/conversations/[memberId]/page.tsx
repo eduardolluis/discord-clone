@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { currentProfile } from "@/lib/current-profile";
-import { db } from "@/lib/db";
-import { getOrCreateConversation } from "@/lib/conversation";
+
 import { ChatHeader } from "@/components/chat/chat-header";
-import { ChatMessages } from "@/components/chat/chat-messages";
 import { ChatInput } from "@/components/chat/chat-input";
+import { ChatMessages } from "@/components/chat/chat-messages";
 import { MediaRoom } from "@/components/media-room";
+import { currentProfile } from "@/lib/current-profile";
+import { getOrCreateConversation } from "@/lib/conversation";
+import { db } from "@/lib/db";
 
 interface MemberIdPageProps {
   params: Promise<{
@@ -13,7 +14,7 @@ interface MemberIdPageProps {
     serverId: string;
   }>;
   searchParams: Promise<{
-    video?: string; // Cambiado a string porque los query params son strings
+    video?: string;
   }>;
 }
 
@@ -23,27 +24,43 @@ const MemberIdPage = async ({ params, searchParams }: MemberIdPageProps) => {
   const isVideo = resolvedSearchParams.video === "true";
 
   const profile = await currentProfile();
+
   if (!profile) {
     return redirect("/sign-in");
   }
 
-  const currentMember = await db.member.findFirst({
-    where: {
-      serverId: serverId,
-      profileId: profile.id,
-    },
-    include: {
-      profile: true,
-    },
-  });
+  const [currentMember, targetMember] = await Promise.all([
+    db.member.findFirst({
+      where: {
+        serverId,
+        profileId: profile.id,
+      },
+      include: {
+        profile: true,
+      },
+    }),
+    db.member.findFirst({
+      where: {
+        id: memberId,
+        serverId,
+      },
+      include: {
+        profile: true,
+      },
+    }),
+  ]);
 
-  if (!currentMember) {
-    return redirect("/");
+  if (
+    !currentMember ||
+    !targetMember ||
+    currentMember.id === targetMember.id
+  ) {
+    return redirect(`/servers/${serverId}`);
   }
 
   const conversation = await getOrCreateConversation(
     currentMember.id,
-    memberId
+    targetMember.id
   );
 
   if (!conversation) {

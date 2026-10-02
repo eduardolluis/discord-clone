@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 
 interface MediaRoomProps {
@@ -13,26 +12,21 @@ interface MediaRoomProps {
 }
 
 export const MediaRoom = ({ chatId, audio, video }: MediaRoomProps) => {
-  const { user } = useUser();
   const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user?.firstName && !user?.lastName) return;
+    const controller = new AbortController();
 
-    const name =
-      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-      user.username ||
-      "Anonymous";
-
-    (async () => {
+    const loadToken = async () => {
       try {
         setIsLoading(true);
         setError("");
 
         const response = await fetch(
-          `/api/livekit?room=${chatId}&username=${encodeURIComponent(name)}`
+          `/api/livekit?room=${encodeURIComponent(chatId)}`,
+          { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -47,15 +41,25 @@ export const MediaRoom = ({ chatId, audio, video }: MediaRoomProps) => {
 
         setToken(data.token);
       } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
         console.error("LiveKit token error:", error);
         setError(
           error instanceof Error ? error.message : "Failed to load video chat"
         );
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
-    })();
-  }, [user?.firstName, user?.lastName, user?.username, chatId]);
+    };
+
+    void loadToken();
+
+    return () => controller.abort();
+  }, [chatId]);
 
   if (isLoading) {
     return (
