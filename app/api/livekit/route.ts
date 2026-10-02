@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AccessToken } from "livekit-server-sdk"
+import { ChannelType } from "@prisma/client";
+import { AccessToken } from "livekit-server-sdk";
 
-// Do not cache endpoint result
+import { currentProfile } from "@/lib/current-profile";
+import { db } from "@/lib/db";
+
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
+  const profile = await currentProfile();
+
+  if (!profile) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const room = req.nextUrl.searchParams.get("room");
-  const username = req.nextUrl.searchParams.get("username");
+
   if (!room) {
     return NextResponse.json(
       { error: 'Missing "room" query parameter' },
-      { status: 400 }
-    );
-  } else if (!username) {
-    return NextResponse.json(
-      { error: 'Missing "username" query parameter' },
       { status: 400 }
     );
   }
@@ -30,11 +34,51 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const at = new AccessToken(apiKey, apiSecret, { identity: username });
-  at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true });
+  const [channel, conversation] = await Promise.all([
+    db.channel.findFirst({
+      where: {
+        id: room,
+        type: { in: [ChannelType.AUDIO, ChannelType.VIDEO] },
+        server: {
+          members: {
+            some: {
+              profileId: profile.id,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    }),
+    db.conversation.findFirst({
+      where: {
+        id: room,
+        OR: [
+          { memberOne: { profileId: profile.id } },
+          { memberTwo: { profileId: profile.id } },
+        ],
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!channel && !conversation) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const token = new AccessToken(apiKey, apiSecret, {
+    identity: profile.id,
+    name: profile.name,
+  });
+
+  token.addGrant({
+    room,
+    roomJoin: true,
+    canPublish: true,
+    canSubscribe: true,
+  });
 
   return NextResponse.json(
-    { token: await at.toJwt() },
+    { token: await token.toJwt() },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

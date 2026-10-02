@@ -1,6 +1,6 @@
-import { DirectMessage } from "@prisma/client";
-import { currentProfile } from "@/lib/current-profile";
 import { NextResponse } from "next/server";
+
+import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
 
 const MESSAGES_BATCH = 10;
@@ -16,61 +16,59 @@ export async function GET(req: Request) {
     if (!profile) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
     if (!conversationId) {
-      return new NextResponse("Channel ID missing", { status: 401 });
+      return new NextResponse("Conversation ID missing", { status: 400 });
     }
 
-    let messages: DirectMessage[] = [];
+    const conversation = await db.conversation.findFirst({
+      where: {
+        id: conversationId,
+        OR: [
+          { memberOne: { profileId: profile.id } },
+          { memberTwo: { profileId: profile.id } },
+        ],
+      },
+      select: { id: true },
+    });
 
-    if (cursor) {
-      messages = await db.directMessage.findMany({
-        take: MESSAGES_BATCH,
-        skip: 1,
-        cursor: {
-          id: cursor,
-        },
-        where: {
-          conversationId,
-        },
-        include: {
-          member: {
-            include: {
-              profile: true,
+    if (!conversation) {
+      return new NextResponse("Conversation not found", { status: 404 });
+    }
+
+    const messages = await db.directMessage.findMany({
+      take: MESSAGES_BATCH,
+      ...(cursor
+        ? {
+            skip: 1,
+            cursor: {
+              id: cursor,
             },
+          }
+        : {}),
+      where: {
+        conversationId: conversation.id,
+      },
+      include: {
+        member: {
+          include: {
+            profile: true,
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-    } else {
-      messages = await db.directMessage.findMany({
-        take: MESSAGES_BATCH,
-        where: {
-          conversationId,
-        },
-        include: {
-          member: {
-            include: {
-              profile: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-    }
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-    let nextCursor = null;
-
-    if (messages.length === MESSAGES_BATCH) {
-      nextCursor = messages[messages.length - 1].id;
-    }
+    const nextCursor =
+      messages.length === MESSAGES_BATCH
+        ? messages[messages.length - 1].id
+        : null;
 
     return NextResponse.json({ items: messages, nextCursor });
   } catch (error) {
-    console.error("DIRECT MESSAGES GET /api/messages:", error);
+    console.error("[DIRECT_MESSAGES_GET]", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
